@@ -34,9 +34,3 @@ class Doctor(models.Model):
     def clean(self):
         if self.work_start == self.work_end:
             raise ValidationError("Work start and end times cannot be the same.")
-
-    def deactivate(self):
-        self.is_available = False
-        self.save(update_fields=["is_available", "updated_at"])
-        self.user.is_active = False
-        self.user.save(update_fields=["is_active"])
