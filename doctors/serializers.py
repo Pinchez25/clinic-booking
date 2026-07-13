@@ -19,4 +19,4 @@ class DoctorSerializer(serializers.ModelSerializer):
 class DoctorAvailabilitySerializer(serializers.Serializer):
     doctor = DoctorSerializer()
     date = serializers.DateField()
-    availability_slots = serializers.ListField(child=serializers.DateTimeField())
+    available_slots = serializers.ListField(child=serializers.DateTimeField())

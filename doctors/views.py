@@ -39,6 +39,6 @@ class DoctorViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
         available_slots = get_available_slots(doctor, target_date)
 
         serializer = DoctorAvailabilitySerializer(
-            {"doctor": doctor, "date": target_date, "availability_slots": available_slots}
+            {"doctor": doctor, "date": target_date, "available_slots": available_slots}
         )
         return Response(serializer.data)
