@@ -10,12 +10,12 @@ router.register("auth", UserViewSet, basename="auth")
 
 urlpatterns = [
     path(
-        "login/",
+        "auth/login/",
         TokenObtainPairView.as_view(throttle_classes=[AuthLoginThrottle]),
         name="auth-login",
     ),
     path(
-        "token/refresh/",
+        "auth/token/refresh/",
         TokenRefreshView.as_view(),
         name="auth-token-refresh",
     ),
