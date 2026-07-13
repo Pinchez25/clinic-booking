@@ -32,7 +32,7 @@ def get_available_slots(doctor: Doctor, target_date: date) -> list[datetime]:
 
 
 def is_valid_slot(doctor: Doctor, slot_time: datetime) -> bool:
-    if slot_time.minute not in (0, 30) or slot_time.second != 0:
+    if slot_time.minute not in (0, 30) or slot_time.second != 0 or slot_time.microsecond != 0:
         return False
 
     slot_as_time = slot_time.time().replace(tzinfo=None)
