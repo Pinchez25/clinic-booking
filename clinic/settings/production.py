@@ -12,6 +12,11 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 SECURE_BROWSER_XSS_FILTER = True
 
-CORS_ALLOWED_ORIGINS = [
-    origin.strip() for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if origin.strip()
-]
+CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
+
+SIMPLE_JWT = {
+    **SIMPLE_JWT,
+    "ALGORITHM": "RS256",
+    "SIGNING_KEY": os.environ["JWT_PRIVATE_KEY"].replace("\\n", "\n"),
+    "VERIFYING_KEY": os.environ["JWT_PUBLIC_KEY"].replace("\\n", "\n"),
+}
