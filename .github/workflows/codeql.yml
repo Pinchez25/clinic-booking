@@ -1,0 +1,132 @@
+name: Security Analysis
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Every Monday at 02:00 UTC
+    - cron: "0 2 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install project dependencies
+        run: uv sync --frozen
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+          config: |
+            paths-ignore:
+              - "**/migrations/**"
+              - "docs/**"
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install project dependencies
+        run: uv sync --frozen
+
+      - name: Run pip-audit
+        run: |
+          uvx pip-audit \
+            --python "$(uv python find)" \
+            --strict
+
+  dependency-review:
+    name: Dependency Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+
+  django-check:
+    name: Django Deployment Check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    env:
+      DJANGO_SETTINGS_MODULE: clinic.settings.production
+      SECRET_KEY: ci-only-not-a-real-secret-do-not-use
+      DATABASE_URL: sqlite:///ci-check.db
+      ALLOWED_HOSTS: example.com
+
+      # Required only because settings import them.
+      JWT_PRIVATE_KEY: ci-placeholder
+      JWT_PUBLIC_KEY: ci-placeholder
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install project dependencies
+        run: uv sync --frozen
+
+      - name: Run Django deployment checks
+        run: python manage.py check --deploy --fail-level WARNING
