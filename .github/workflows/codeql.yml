@@ -79,11 +79,8 @@ jobs:
       - name: Install project dependencies
         run: uv sync --frozen
 
-      - name: Run pip-audit
-        run: |
-          uvx pip-audit \
-            --python "$(uv python find)" \
-            --strict
+      - name: Run dependency audit
+        run: uv run pip-audit --strict
 
   dependency-review:
     name: Dependency Review
