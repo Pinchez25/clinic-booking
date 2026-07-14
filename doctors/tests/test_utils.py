@@ -3,6 +3,8 @@ from datetime import UTC
 
 import pytest
 
+from accounts.tests.factories import UserFactory
+from appointments.models import Appointment
 from doctors.tests.factories import DoctorFactory, OvernightDoctorFactory
 from doctors.utils import generate_slots, get_available_slots, is_valid_slot
 
@@ -70,9 +72,6 @@ class TestGetAvailableSlots:
         assert len(slots) == 16
 
     def test_booked_slot_excluded_from_available(self):
-        from appointments.models import Appointment
-        from users.tests.factories import UserFactory
-
         doctor = DoctorFactory(
             work_start=datetime.time(8, 0),
             work_end=datetime.time(16, 0),
@@ -92,8 +91,6 @@ class TestGetAvailableSlots:
         assert len(slots) == 15
 
     def test_cancelled_booking_frees_slot(self):
-        from appointments.models import Appointment
-        from users.tests.factories import UserFactory
 
         doctor = DoctorFactory(
             work_start=datetime.time(8, 0),
