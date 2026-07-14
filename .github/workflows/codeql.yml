@@ -129,4 +129,4 @@ jobs:
         run: uv sync --frozen
 
       - name: Run Django deployment checks
-        run: python manage.py check --deploy --fail-level WARNING
+        run: uv run python manage.py check --deploy --fail-level WARNING
