@@ -105,7 +105,7 @@ jobs:
 
     env:
       DJANGO_SETTINGS_MODULE: clinic.settings.production
-      SECRET_KEY: ci-only-not-a-real-secret-do-not-use
+      SECRET_KEY: "uftob5skg=brqg35@$r)%n9ljsu-u0+r9)1uojno3-g3x(ra^y"
       DATABASE_URL: sqlite:///ci-check.db
       ALLOWED_HOSTS: example.com
 
