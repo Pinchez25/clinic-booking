@@ -24,6 +24,7 @@ class Doctor(models.Model):
                 name="doctor_work_start_not_equal_work_end",
             )
         ]
+        ordering = ("-created_at",)
 
     def __str__(self) -> str:
         return f"Dr. {self.user.get_full_name() or self.user.email}"
