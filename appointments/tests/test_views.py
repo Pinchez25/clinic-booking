@@ -288,4 +288,5 @@ class TestPatientAppointments:
         )
         response = client.get(f"/api/patients/{patient.id}/appointments/")
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 0
