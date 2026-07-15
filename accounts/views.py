@@ -2,7 +2,7 @@ import logging
 
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.exceptions import TokenError
@@ -24,22 +24,17 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 class UserViewSet(GenericViewSet):
-    def get_permissions(self):
-        if self.action == "register":
-            return [AllowAny()]
-        return [IsAuthenticated()]
+    serializer_class = UserSerializer
 
-    def get_throttles(self):
-        if self.action == "register":
-            return [AuthRegisterThrottle()]
-        return super().get_throttles()
-
-    def get_serializer_class(self):
-        if self.action == "register":
-            return RegisterSerializer
-        return UserSerializer
-
-    @action(detail=False, methods=["post"], url_path="register")
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="register",
+        authentication_classes=[],
+        permission_classes=[AllowAny],
+        throttle_classes=[AuthRegisterThrottle],
+        serializer_class=RegisterSerializer,
+    )
     def register(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
