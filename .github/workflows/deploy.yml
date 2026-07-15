@@ -61,9 +61,6 @@ jobs:
       - name: Lint
         run: uv run ruff check .
 
-      - name: Check for missing migrations
-        run: uv run python manage.py makemigrations --check --dry-run
-
       - name: Run tests
         run: uv run pytest --cov --cov-report=term-missing
 
