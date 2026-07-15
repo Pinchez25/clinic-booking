@@ -1,4 +1,3 @@
-from django.utils import timezone
 from rest_framework import serializers
 
 from accounts.serializers import UserSerializer
@@ -26,14 +25,10 @@ class AppointmentSerializer(serializers.ModelSerializer):
 
 
 class BookAppointmentSerializer(serializers.Serializer):
+    """Validates request shape only. Business rules live in services."""
+
     doctor_id = serializers.UUIDField()
     slot_time = serializers.DateTimeField()
-
-    @staticmethod
-    def validate_slot_time(value):
-        if value <= timezone.now():
-            raise serializers.ValidationError("Cannot book an appointment in the past.")
-        return value
 
 
 class CancelAppointmentSerializer(serializers.Serializer):
@@ -41,10 +36,6 @@ class CancelAppointmentSerializer(serializers.Serializer):
 
 
 class RescheduleAppointmentSerializer(serializers.Serializer):
-    slot_time = serializers.DateTimeField()
+    """Validates request shape only. Business rules live in services."""
 
-    @staticmethod
-    def validate_slot_time(value):
-        if value <= timezone.now():
-            raise serializers.ValidationError("New slot time must be in the future.")
-        return value
+    slot_time = serializers.DateTimeField()

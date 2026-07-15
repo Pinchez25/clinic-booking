@@ -25,12 +25,18 @@ class Appointment(models.Model):
         ordering = ("-created_at",)
         verbose_name = "Appointment"
         verbose_name_plural = "Appointments"
+
         constraints = [
             models.UniqueConstraint(
                 fields=["doctor", "slot_time"],
                 condition=models.Q(status="ACTIVE"),
                 name="unique_active_appointment_per_doctor_slot",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["patient", "slot_time"],
+                condition=models.Q(status="ACTIVE"),
+                name="unique_active_appointment_per_patient_slot",
+            ),
         ]
 
     def __str__(self):

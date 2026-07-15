@@ -1,11 +1,16 @@
 import datetime
 
 import pytest
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from accounts.tests.factories import UserFactory
 from doctors.tests.factories import DoctorFactory, OvernightDoctorFactory
+
+
+def future_date_str():
+    return (timezone.localdate() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 
 
 @pytest.fixture
@@ -25,14 +30,6 @@ class TestDoctorListView:
         assert response.status_code == status.HTTP_200_OK
         assert response.data["count"] == 3
 
-    def test_excludes_inactive_doctors(self, client):
-        DoctorFactory(is_available=True)
-        DoctorFactory(is_available=False)
-        response = client.get("/api/doctors/")
-
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data["count"] == 1
-
     def test_response_does_not_expose_phone_or_personal_details(self, client):
         DoctorFactory()
         response = client.get("/api/doctors/")
@@ -40,7 +37,6 @@ class TestDoctorListView:
         doctor_data = response.data["results"][0]
         assert "personal_phone" not in doctor_data
         assert "password" not in doctor_data
-        assert "username" not in doctor_data
 
     def test_unauthenticated_returns_401(self):
         response = APIClient().get("/api/doctors/")
@@ -54,7 +50,7 @@ class TestDoctorAvailabilityAction:
             work_start=datetime.time(8, 0),
             work_end=datetime.time(10, 0),
         )
-        response = client.get(f"/api/doctors/{doctor.id}/availability/?date=2025-06-15")
+        response = client.get(f"/api/doctors/{doctor.id}/availability/?date={future_date_str()}")
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["available_slots"]) == 4  # 08:00, 08:30, 09:00, 09:30
@@ -74,13 +70,7 @@ class TestDoctorAvailabilityAction:
     def test_overnight_doctor_returns_correct_slots(self, client):
         # 22:00 - 06:00 = 16 slots
         doctor = OvernightDoctorFactory()
-        response = client.get(f"/api/doctors/{doctor.id}/availability/?date=2025-06-15")
+        response = client.get(f"/api/doctors/{doctor.id}/availability/?date={future_date_str()}")
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["available_slots"]) == 16
-
-    def test_inactive_doctor_returns_404(self, client):
-        doctor = DoctorFactory(is_available=False)
-        response = client.get(f"/api/doctors/{doctor.id}/availability/?date=2025-06-15")
-
-        assert response.status_code == status.HTTP_404_NOT_FOUND

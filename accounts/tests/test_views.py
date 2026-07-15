@@ -40,8 +40,8 @@ class TestRegisterAction:
         response = client.post("/api/auth/register/", payload)
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["email"] == "new@example.com"
-        assert response.data["role"] == User.Role.PATIENT
+        assert response.data["user"]["email"] == "new@example.com"
+        assert response.data["user"]["role"] == User.Role.PATIENT
         assert "password" not in response.data
 
     def test_password_mismatch_returns_400(self, client):

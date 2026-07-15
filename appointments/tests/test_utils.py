@@ -55,7 +55,7 @@ class TestBookAppointment:
 
     def test_rejects_slot_within_one_hour(self, doctor, patient):
         soon = timezone.now() + datetime.timedelta(minutes=30)
-        with pytest.raises(InvalidSlotError, match="1 hour"):
+        with pytest.raises(InvalidSlotError, match="one hour"):
             book_appointment(doctor, patient, soon)
 
     def test_rejects_slot_outside_working_hours(self, doctor, patient):
@@ -73,7 +73,9 @@ class TestBookAppointment:
         book_appointment(doctor, patient, slot)
 
         patient2 = UserFactory()
-        with pytest.raises(SlotUnavailableError, match="already booked"):
+        with pytest.raises(
+            SlotUnavailableError, match="The requested appointment slot is no longer available"
+        ):
             book_appointment(doctor, patient2, slot)
 
     def test_cancelled_slot_can_be_rebooked(self, doctor, patient):
@@ -137,7 +139,7 @@ class TestCancelAppointment:
         appointment = book_appointment(doctor, patient, slot)
         cancel_appointment(appointment, reason="First cancellation")
 
-        with pytest.raises(AppointmentStatusError, match="already cancelled"):
+        with pytest.raises(AppointmentStatusError, match="already been cancelled"):
             cancel_appointment(appointment, reason="Second cancellation")
 
 
@@ -191,7 +193,7 @@ class TestRescheduleAppointment:
         patient2 = UserFactory()
         book_appointment(doctor, patient2, new_slot)
 
-        with pytest.raises(SlotUnavailableError, match="already booked"):
+        with pytest.raises(SlotUnavailableError, match="slot is no longer available"):
             reschedule_appointment(appointment, new_slot)
 
         # Original appointment must still be active on the original slot
