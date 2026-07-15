@@ -29,6 +29,9 @@ class Doctor(models.Model):
 
     @property
     def is_overnight(self) -> bool:
+        if self.work_start is None or self.work_end is None:
+            return False
+
         return self.work_end <= self.work_start
 
     def clean(self):
