@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 from django.core.exceptions import ValidationError
 
@@ -23,10 +25,9 @@ class TestDoctorModel:
         assert doctor.is_overnight is True
 
     def test_same_start_and_end_raises_validation_error(self):
-        import datetime
-
+        doctor = DoctorFactory.build(
+            work_start=datetime.time(9, 0),
+            work_end=datetime.time(9, 0),
+        )
         with pytest.raises(ValidationError):
-            DoctorFactory(
-                work_start=datetime.time(9, 0),
-                work_end=datetime.time(9, 0),
-            )
+            doctor.clean()
