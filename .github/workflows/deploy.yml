@@ -31,8 +31,9 @@ jobs:
 
     env:
       DJANGO_SETTINGS_MODULE: clinic.settings.development
-      DJANGO_SECRET_KEY: ci-secret-key-not-for-production
-      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      SECRET_KEY: ci-secret-key-not-for-production
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      DATABASE_URL: postgres://clinic:clinic@localhost:5432/clinic_test
 
       DB_NAME: clinic_test
       DB_USER: clinic
