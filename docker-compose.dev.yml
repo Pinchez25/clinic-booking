@@ -1,16 +1,19 @@
+name: clinic
+
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-clinic}
-      POSTGRES_USER: ${DB_USER:-clinic}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-clinic}
+      POSTGRES_DB: clinic
+      POSTGRES_USER: clinic
+      POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-clinic}"]
+      test: ["CMD-SHELL", "pg_isready -U clinic -d clinic"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -18,19 +21,19 @@ services:
   web:
     build:
       context: .
-      target: builder          # Use builder stage — has dev deps, fast rebuilds
     command: >
       sh -c "python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
+    restart: unless-stopped
     volumes:
-      - .:/app                 # Mount source for hot reload
+      - .:/app
     ports:
       - "8000:8000"
     env_file:
       - .env
     environment:
+      DATABASE_URL: postgres://clinic:postgres@db:5432/clinic
       DJANGO_SETTINGS_MODULE: clinic.settings.development
-      DB_HOST: db              # Override to use Docker service name
     depends_on:
       db:
         condition: service_healthy
