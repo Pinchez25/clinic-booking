@@ -36,11 +36,10 @@ class AppointmentViewSet(CreateModelMixin, RetrieveModelMixin, GenericViewSet):
     permission_classes = [IsAuthenticated, IsPatient]
 
     def get_queryset(self):
-        return (
-            Appointment.objects.select_related("doctor__user", "patient")
-            .filter(patient=self.request.user)
-            .order_by("slot_time")
-        )
+        qs = Appointment.objects.select_related("doctor__user", "patient").order_by("slot_time")
+        if self.action in {"cancel", "reschedule"}:
+            return qs
+        return qs.filter(patient=self.request.user)
 
     def get_permissions(self):
         if self.action in {"cancel", "reschedule"}:
