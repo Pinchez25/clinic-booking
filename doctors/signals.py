@@ -13,18 +13,16 @@ def assign_doctor_role(sender, instance, created, **kwargs):
         return
 
     transaction.on_commit(
-        lambda: (
-            User.objects.filter(pk=instance.user_id)
-            .exclude(role=User.Role.DOCTOR)
-            .update(role=User.Role.DOCTOR)
-        )
+        lambda: User.objects.filter(
+            pk=instance.user_id,
+            role=User.Role.PATIENT,
+        ).update(role=User.Role.DOCTOR)
     )
 
 
 @receiver(post_delete, sender=Doctor)
 def remove_doctor_role(sender, instance, **kwargs):
-    user = instance.user
-
-    if user.role == User.Role.DOCTOR:
-        user.role = User.Role.PATIENT
-        user.save(update_fields=["role"])
+    User.objects.filter(
+        pk=instance.user_id,
+        role=User.Role.DOCTOR,
+    ).update(role=User.Role.PATIENT)
