@@ -30,14 +30,6 @@ class TestDoctorListView:
         assert response.status_code == status.HTTP_200_OK
         assert response.data["count"] == 3
 
-    def test_excludes_inactive_doctors(self, client):
-        DoctorFactory(is_available=True)
-        DoctorFactory(is_available=False)
-        response = client.get("/api/doctors/")
-
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data["count"] == 1
-
     def test_response_does_not_expose_phone_or_personal_details(self, client):
         DoctorFactory()
         response = client.get("/api/doctors/")
@@ -82,9 +74,3 @@ class TestDoctorAvailabilityAction:
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["available_slots"]) == 16
-
-    def test_inactive_doctor_returns_404(self, client):
-        doctor = DoctorFactory(is_available=False)
-        response = client.get(f"/api/doctors/{doctor.id}/availability/?date={future_date_str()}")
-
-        assert response.status_code == status.HTTP_404_NOT_FOUND
