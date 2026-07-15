@@ -18,14 +18,15 @@ class Doctor(models.Model):
     class Meta:
         verbose_name = "Doctor"
         verbose_name_plural = "Doctors"
-        ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(work_start=models.F("work_end")),
+                name="doctor_work_start_not_equal_work_end",
+            )
+        ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Dr. {self.user.get_full_name() or self.user.email}"
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
 
     @property
     def is_overnight(self) -> bool:
@@ -36,4 +37,4 @@ class Doctor(models.Model):
 
     def clean(self):
         if self.work_start == self.work_end:
-            raise ValidationError("Work start and end times cannot be the same.")
+            raise ValidationError("work_start and work_end cannot be the same time.")
