@@ -104,7 +104,7 @@ jobs:
       DJANGO_SETTINGS_MODULE: clinic.settings.production
       SECRET_KEY: "uftob5skg=brqg35@$r)%n9ljsu-u0+r9)1uojno3-g3x(ra^y"
       DATABASE_URL: sqlite:///ci-check.db
-      ALLOWED_HOSTS: example.com
+      ALLOWED_HOSTS: https://example.com
 
       # Required only because settings import them.
       JWT_PRIVATE_KEY: ci-placeholder
