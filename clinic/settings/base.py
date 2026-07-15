@@ -179,3 +179,4 @@ LOGGING = {
         },
     },
 }
+MAX_BOOKING_DAYS_AHEAD = 90
