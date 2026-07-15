@@ -1,5 +1,6 @@
 import logging
 
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
@@ -22,10 +23,30 @@ logger = logging.getLogger("users.auth")
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
+    @extend_schema(
+        summary="Login",
+        description="Authenticate a user and return JWT access and refresh tokens.",
+        tags=["Authentication"],
+        responses={200: OpenApiResponse(description="JWT tokens issued successfully")},
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
+
+@extend_schema(tags=["Authentication"])
 class UserViewSet(GenericViewSet):
     serializer_class = UserSerializer
 
+    @extend_schema(
+        summary="Register a new patient",
+        description="Create a new account for a patient and return JWT tokens.",
+        request=RegisterSerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Account created successfully.",
+            )
+        },
+    )
     @action(
         detail=False,
         methods=["post"],
@@ -54,6 +75,18 @@ class UserViewSet(GenericViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @extend_schema(
+        summary="Logout",
+        description="Blacklist a refresh token to revoke the current session.",
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {"refresh": {"type": "string"}},
+                "required": ["refresh"],
+            }
+        },
+        responses={204: None},
+    )
     @action(detail=False, methods=["post"], url_path="logout")
     def logout(self, request):
         refresh_token = request.data.get("refresh")
@@ -79,6 +112,11 @@ class UserViewSet(GenericViewSet):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @extend_schema(
+        summary="Current user profile",
+        description="Return the authenticated user's profile information.",
+        responses={200: UserSerializer},
+    )
     @action(detail=False, methods=["get"], url_path="me")
     def me(self, request):
         serializer = self.get_serializer(request.user)
