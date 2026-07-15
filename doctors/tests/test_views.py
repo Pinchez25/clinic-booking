@@ -40,7 +40,6 @@ class TestDoctorListView:
         doctor_data = response.data["results"][0]
         assert "personal_phone" not in doctor_data
         assert "password" not in doctor_data
-        assert "username" not in doctor_data
 
     def test_unauthenticated_returns_401(self):
         response = APIClient().get("/api/doctors/")

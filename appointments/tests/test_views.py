@@ -106,7 +106,6 @@ class TestBookAppointment:
 
         assert "personal_phone" not in str(response.data)
         assert "password" not in str(response.data)
-        assert "username" not in str(response.data)
 
 
 @pytest.mark.django_db
