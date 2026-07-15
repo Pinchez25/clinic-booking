@@ -108,7 +108,10 @@ USE_I18N = True
 
 USE_TZ = True
 
+CLINIC_TIMEZONE = os.getenv("CLINIC_TIMEZONE", "Africa/Nairobi")
+
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
