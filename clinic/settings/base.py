@@ -128,11 +128,10 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 25,
+    # "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
     ],
-    # "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    # Auth endpoints get tighter throttling — see per-view overrides
     "DEFAULT_THROTTLE_RATES": {
         "anon": "100/day",
         "user": "1000/day",
@@ -149,6 +148,13 @@ SIMPLE_JWT = {
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
     "TOKEN_OBTAIN_SERIALIZER": "accounts.serializers.CustomTokenObtainPairSerializer",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Clinic Booking API",
+    "DESCRIPTION": "API for appointments scheduling with doctors",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
 }
 
 LOGGING = {
