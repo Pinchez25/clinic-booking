@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from accounts.permissions import IsPatient
+from accounts.serializers import UserSerializer
 from doctors.models import Doctor
 
 from .models import Appointment
@@ -130,6 +131,7 @@ class AppointmentViewSet(CreateModelMixin, RetrieveModelMixin, GenericViewSet):
 
 @extend_schema(tags=["Patients"])
 class PatientViewSet(RetrieveModelMixin, GenericViewSet):
+    serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, IsPatient]
     queryset = get_user_model().objects.all()
 
