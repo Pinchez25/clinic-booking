@@ -6,7 +6,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from doctors.models import Doctor
-from doctors.utils import is_valid_slot
+from doctors.utils import get_shift_bounds, is_valid_slot
 
 from .exceptions import (
     AppointmentError,
@@ -138,11 +138,14 @@ def cancel_appointments_for_day(
     reason: str,
 ) -> list[Appointment]:
     with transaction.atomic():
+        shift_start, shift_end = get_shift_bounds(doctor, target_date)
+
         appointments = list(
             Appointment.objects.select_for_update().filter(
                 doctor=doctor,
                 status=Appointment.Status.ACTIVE,
-                slot_time__date=target_date,
+                slot_time__gte=shift_start,
+                slot_time__lt=shift_end,
             )
         )
 
