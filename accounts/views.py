@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .serializers import (
     CustomTokenObtainPairSerializer,
@@ -31,6 +31,16 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     )
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
+
+
+@extend_schema(
+    summary="Refresh token",
+    description="Get a new access token using a refresh token.",
+    tags=["Authentication"],
+    responses={200: OpenApiResponse(description="New access token issued successfully")},
+)
+class CustomTokenRefreshView(TokenRefreshView):
+    pass
 
 
 @extend_schema(tags=["Authentication"])

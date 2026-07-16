@@ -1,9 +1,8 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenRefreshView
 
 from .throttles import AuthLoginThrottle
-from .views import CustomTokenObtainPairView, UserViewSet
+from .views import CustomTokenObtainPairView, CustomTokenRefreshView, UserViewSet
 
 router = DefaultRouter()
 router.register("auth", UserViewSet, basename="auth")
@@ -18,7 +17,7 @@ urlpatterns = [
     ),
     path(
         "auth/token/refresh/",
-        TokenRefreshView.as_view(),
+        CustomTokenRefreshView.as_view(),
         name="auth-token-refresh",
     ),
     *router.urls,
