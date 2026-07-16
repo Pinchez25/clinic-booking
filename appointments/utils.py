@@ -1,35 +1,26 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from appointments.models import Appointment
 from doctors.models import Doctor
 from doctors.utils import is_valid_slot
+
+from .exceptions import (
+    AppointmentError,
+    AppointmentStatusError,
+    InvalidSlotError,
+    SlotUnavailableError,
+)
+from .models import Appointment
 
 User = get_user_model()
 
 logger = logging.getLogger("appointments")
 
 APPOINTMENT_BOOKING_BUFFER = timedelta(hours=1)
-
-
-class AppointmentError(Exception):
-    pass
-
-
-class SlotUnavailableError(AppointmentError):
-    pass
-
-
-class InvalidSlotError(AppointmentError):
-    pass
-
-
-class AppointmentStatusError(AppointmentError):
-    pass
 
 
 def _validate_slot_time(
@@ -119,6 +110,80 @@ def cancel_appointment(
     return appointment
 
 
+def _cancel_appointments(appointments: list[Appointment], reason: str) -> list[Appointment]:
+    if not appointments:
+        return []
+
+    for appointment in appointments:
+        appointment.status = Appointment.Status.CANCELLED
+        appointment.cancel_reason = reason
+
+    Appointment.objects.bulk_update(
+        appointments,
+        fields=["status", "cancel_reason", "updated_at"],
+    )
+    return appointments
+
+
+def cancel_appointments_for_day(
+    doctor: Doctor,
+    target_date: date,
+    reason: str,
+) -> list[Appointment]:
+    with transaction.atomic():
+        appointments = list(
+            Appointment.objects.select_for_update().filter(
+                doctor=doctor,
+                status=Appointment.Status.ACTIVE,
+                slot_time__date=target_date,
+            )
+        )
+
+        _cancel_appointments(appointments, reason)
+
+    logger.info(
+        "Cancelled %s appointments for doctor=%s date=%s",
+        len(appointments),
+        doctor.id,
+        target_date,
+    )
+    return appointments
+
+
+def update_doctor_working_hours(
+    doctor: Doctor,
+    work_start: time,
+    work_end: time,
+    reason: str,
+) -> Doctor:
+    with transaction.atomic():
+        doctor = Doctor.objects.select_for_update().get(pk=doctor.pk)
+        doctor.work_start = work_start
+        doctor.work_end = work_end
+        doctor.save(update_fields=["work_start", "work_end", "updated_at"])
+
+        appointments = list(
+            Appointment.objects.select_for_update().filter(
+                doctor=doctor,
+                status=Appointment.Status.ACTIVE,
+                slot_time__gte=timezone.now(),
+            )
+        )
+        affected_appointments = [
+            appointment
+            for appointment in appointments
+            if not is_valid_slot(doctor, appointment.slot_time)
+        ]
+        _cancel_appointments(affected_appointments, reason)
+
+    logger.info(
+        "Updated working hours for doctor=%s and cancelled %s affected appointments",
+        doctor.id,
+        len(affected_appointments),
+    )
+    return doctor
+
+
 def reschedule_appointment(
     appointment: Appointment,
     new_slot_time: datetime,
@@ -163,3 +228,13 @@ def reschedule_appointment(
     )
 
     return appointment
+
+
+def _can_manage_appointment(user, appointment):
+    if user.has_role(User.Role.ADMIN):
+        return True
+
+    if user.has_role(User.Role.DOCTOR):
+        return appointment.doctor.user_id == user.id
+
+    return appointment.patient_id == user.id
