@@ -126,7 +126,7 @@ class TestCancelAppointment:
         assert response.data["status"] == Appointment.Status.CANCELLED
         assert response.data["cancel_reason"] == "Feeling better"
 
-    def test_cannot_cancel_another_patients_appointment(self, doctor, db):
+    def test_rescheduling_another_patients_appointment_returns_404(self, doctor, db):
         patient1 = UserFactory()
         patient2 = UserFactory()
         appointment = AppointmentFactory(
@@ -138,11 +138,11 @@ class TestCancelAppointment:
         client.force_authenticate(user=patient2)
 
         response = client.patch(
-            f"/api/appointments/{appointment.id}/cancel/",
-            {"reason": "Unauthorized"},
+            f"/api/appointments/{appointment.id}/reschedule/",
+            {"slot_time": make_slot(10)},
         )
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_cancelling_already_cancelled_returns_400(self, auth_client, doctor, patient):
         client, _ = auth_client
@@ -188,7 +188,7 @@ class TestRescheduleAppointment:
         assert response.status_code == status.HTTP_200_OK
         assert "10:00" in response.data["slot_time"]
 
-    def test_cannot_reschedule_another_patients_appointment(self, doctor, db):
+    def test_canceling_another_patients_appointment_returns_404(self, doctor, db):
         patient1 = UserFactory()
         patient2 = UserFactory()
         appointment = AppointmentFactory(
@@ -200,11 +200,11 @@ class TestRescheduleAppointment:
         client.force_authenticate(user=patient2)
 
         response = client.patch(
-            f"/api/appointments/{appointment.id}/reschedule/",
-            {"slot_time": make_slot(10)},
+            f"/api/appointments/{appointment.id}/cancel/",
+            {"reason": "Unauthorized"},
         )
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_rescheduling_cancelled_appointment_returns_400(self, auth_client, doctor, patient):
         client, _ = auth_client
