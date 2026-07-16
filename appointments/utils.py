@@ -114,13 +114,20 @@ def _cancel_appointments(appointments: list[Appointment], reason: str) -> list[A
     if not appointments:
         return []
 
+    now = timezone.now()
+
     for appointment in appointments:
         appointment.status = Appointment.Status.CANCELLED
         appointment.cancel_reason = reason
+        appointment.updated_at = now
 
     Appointment.objects.bulk_update(
         appointments,
-        fields=["status", "cancel_reason", "updated_at"],
+        fields=[
+            "status",
+            "cancel_reason",
+            "updated_at",
+        ],
     )
     return appointments
 
