@@ -67,8 +67,15 @@ original booking. They never lose a slot.
   All API responses return UTC ISO 8601 datetimes — client applications are responsible for converting to the user's
   local timezone for display. A multi-location clinic would need a timezone field per `Doctor` rather than a single
   global setting.
-- **Working hour changes**: Existing bookings outside new working hours are grandfathered. No retroactive cancellation.
-- **Doctor cancelling a full day**: Admin operation only in this version — no API endpoint.
+- **Working hour changes**: When a doctor's working hours change, any active appointment that no longer falls within the
+  updated schedule is cancelled automatically and marked with the update reason. This is currently applied to active
+  bookings that still fit the future booking window.
+- **Doctor cancellation scope**: Doctors can cancel their own appointments through the existing appointment cancel
+  endpoint.
+  They cannot cancel another doctor's appointments. Admin users can cancel any appointment.
+- **Day-wide cancellation**: The service supports cancelling all active appointments for a given day by doctor/admin
+  action,
+  but this is still handled through the service layer rather than a dedicated public endpoint.
 - **Password reset**: Out of scope. Requires email infrastructure. Noted as a V2 concern.
 - **`date` parameter on availability**: Means the shift start date, not the calendar date. A night-shift doctor's July
   13 availability returns slots from `2026-07-13 22:00Z` to `2026-07-14 05:30Z`.
@@ -164,22 +171,23 @@ Authorization: Bearer <access_token>
 
 ### Endpoints
 
-| Method  | Endpoint                                          | Auth         | Description                                                   |
-|---------|---------------------------------------------------|--------------|---------------------------------------------------------------|
-| `POST`  | `/api/auth/register/`                             | None         | Register as a patient. Returns token pair immediately.        |
-| `POST`  | `/api/auth/login/`                                | None         | Login. Returns access + refresh tokens.                       |
-| `POST`  | `/api/auth/token/refresh/`                        | None         | Get a new access token using a refresh token.                 |
-| `POST`  | `/api/auth/logout/`                               | Required     | Blacklist the refresh token.                                  |
-| `GET`   | `/api/auth/me/`                                   | Required     | Get current user profile.                                     |
-| `PATCH` | `/api/auth/me/`                                   | Required     | Update profile (first name, last name, email).                |
-| `GET`   | `/api/doctors/`                                   | Required     | List all available doctors.                                   |
-| `GET`   | `/api/doctors/{id}/`                              | Required     | Get a single doctor.                                          |
-| `GET`   | `/api/doctors/{id}/availability/?date=YYYY-MM-DD` | Required     | Available 30-minute slots for a doctor on a given date (UTC). |
-| `POST`  | `/api/appointments/`                              | Patient only | Book an appointment.                                          |
-| `PATCH` | `/api/appointments/{id}/cancel/`                  | Owner only   | Cancel with a reason.                                         |
-| `PATCH` | `/api/appointments/{id}/reschedule/`              | Owner only   | Move to a new slot.                                           |
-| `GET`   | `/api/patients/{id}/appointments/`                | Owner only   | Upcoming active appointments sorted by date.                  |
-| `GET`   | `/`                                               | None         | Interactive Swagger UI.                                       |
+| Method  | Endpoint                                          | Auth                 | Description                                                                                                                |
+|---------|---------------------------------------------------|----------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `POST`  | `/api/auth/register/`                             | None                 | Register as a patient. Returns token pair immediately.                                                                     |
+| `POST`  | `/api/auth/login/`                                | None                 | Login. Returns access + refresh tokens.                                                                                    |
+| `POST`  | `/api/auth/token/refresh/`                        | None                 | Get a new access token using a refresh token.                                                                              |
+| `POST`  | `/api/auth/logout/`                               | Required             | Blacklist the refresh token.                                                                                               |
+| `GET`   | `/api/auth/me/`                                   | Required             | Get current user profile.                                                                                                  |
+| `PATCH` | `/api/auth/me/`                                   | Required             | Update profile (first name, last name, email).                                                                             |
+| `GET`   | `/api/doctors/`                                   | Required             | List all available doctors.                                                                                                |
+| `GET`   | `/api/doctors/{id}/`                              | Required             | Get a single doctor.                                                                                                       |
+| `GET`   | `/api/doctors/{id}/availability/?date=YYYY-MM-DD` | Required             | Available 30-minute slots for a doctor on a given date (UTC).                                                              |
+| `GET`   | `/api/appointments/`                              | Authenticated        | List appointments visible to the current user. Doctors see their own appointments; patients see their own; admins see all. |
+| `POST`  | `/api/appointments/`                              | Patient only         | Book an appointment.                                                                                                       |
+| `PATCH` | `/api/appointments/{id}/cancel/`                  | Patient/doctor/admin | Cancel an appointment with a reason. Patients can cancel their own; doctors can cancel their own; admins can cancel any.   |
+| `PATCH` | `/api/appointments/{id}/reschedule/`              | Patient only         | Move to a new slot. Only the patient who owns the booking can reschedule it.                                               |
+| `GET`   | `/api/patients/{id}/appointments/`                | Owner only           | Upcoming active appointments sorted by date.                                                                               |
+| `GET`   | `/`                                               | None                 | Interactive Swagger UI.                                                                                                    |
 
 ### Generating RSA Keys (Production)
 
@@ -217,11 +225,11 @@ including SQL injection, path traversal, and insecure deserialization.
 
 ### Code Quality Checks (`qodo-ai-review.yml`)
 
-* This workflow works on a PR, when opened and when the PR is updated.
-* It runs the AI-generated review workflow on the PR.
-* The workflow takes advantage of the qodo github plugin and comments "/review" on the PR which triggers the review bot.
-* The review bot will then review the PR and provide feedback on what can be improved or potential bugs.
-* Mine is to review the feedback and evaluate whether the suggested changes are necessary.
+- This workflow works on a PR, when opened and when the PR is updated.
+- It runs the AI-generated review workflow on the PR.
+- The workflow takes advantage of the qodo github plugin and comments "/review" on the PR which triggers the review bot.
+- The review bot will then review the PR and provide feedback on what can be improved or potential bugs.
+- Mine is to review the feedback and evaluate whether the suggested changes are necessary.
 
 ### Secrets Required
 
