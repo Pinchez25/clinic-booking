@@ -231,7 +231,7 @@ including SQL injection, path traversal, and insecure deserialization.
 
 Deployed on **Render** using `render.yaml` for infrastructure-as-code.
 
-- **Public URL**: `https://clinic-booking.onrender.com`
+- **Public URL**: `https://clinic-booking-tz0o.onrender.com/`
 - **Branch**: Merging a PR into `main` triggers a deployment
 - **Database**: Managed Postgres 16 on Render free tier
 - **Static files**: Served by WhiteNoise — no CDN required
