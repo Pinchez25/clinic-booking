@@ -6,14 +6,14 @@ import pytest
 from django.utils import timezone
 
 from accounts.tests.factories import UserFactory
+from appointments.exceptions import AppointmentStatusError, InvalidSlotError, SlotUnavailableError
 from appointments.models import Appointment
 from appointments.utils import (
-    AppointmentStatusError,
-    InvalidSlotError,
-    SlotUnavailableError,
     book_appointment,
     cancel_appointment,
+    cancel_appointments_for_day,
     reschedule_appointment,
+    update_doctor_working_hours,
 )
 from doctors.tests.factories import DoctorFactory
 
@@ -141,6 +141,42 @@ class TestCancelAppointment:
 
         with pytest.raises(AppointmentStatusError, match="already been cancelled"):
             cancel_appointment(appointment, reason="Second cancellation")
+
+    def test_doctor_can_cancel_all_appointments_for_a_day(self, doctor, patient):
+        first_slot = make_slot(9, 0)
+        second_slot = make_slot(10, 0)
+        first_appointment = book_appointment(doctor, patient, first_slot)
+        second_patient = UserFactory()
+        second_appointment = book_appointment(doctor, second_patient, second_slot)
+
+        cancelled = cancel_appointments_for_day(
+            doctor=doctor,
+            target_date=FUTURE_DATE,
+            reason="Doctor unavailable",
+        )
+
+        first_appointment.refresh_from_db()
+        second_appointment.refresh_from_db()
+        assert len(cancelled) == 2
+        assert first_appointment.status == Appointment.Status.CANCELLED
+        assert second_appointment.status == Appointment.Status.CANCELLED
+        assert first_appointment.cancel_reason == "Doctor unavailable"
+
+    def test_changing_working_hours_cancels_bookings_outside_new_hours(self, doctor, patient):
+        slot = make_slot(9, 0)
+        appointment = book_appointment(doctor, patient, slot)
+
+        updated_doctor = update_doctor_working_hours(
+            doctor=doctor,
+            work_start=datetime.time(10, 0),
+            work_end=datetime.time(12, 0),
+            reason="Clinic hours updated",
+        )
+
+        appointment.refresh_from_db()
+        assert updated_doctor.work_start == datetime.time(10, 0)
+        assert appointment.status == Appointment.Status.CANCELLED
+        assert appointment.cancel_reason == "Clinic hours updated"
 
 
 @pytest.mark.django_db

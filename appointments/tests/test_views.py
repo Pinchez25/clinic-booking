@@ -5,7 +5,7 @@ import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from accounts.tests.factories import UserFactory
+from accounts.tests.factories import AdminUserFactory, UserFactory
 from appointments.models import Appointment
 from appointments.tests.factories import AppointmentFactory
 from doctors.tests.factories import DoctorFactory
@@ -126,7 +126,59 @@ class TestCancelAppointment:
         assert response.data["status"] == Appointment.Status.CANCELLED
         assert response.data["cancel_reason"] == "Feeling better"
 
-    def test_rescheduling_another_patients_appointment_returns_404(self, doctor, db):
+    def test_doctor_can_cancel_their_own_appointment(self, doctor, patient):
+        client = APIClient()
+        client.force_authenticate(user=doctor.user)
+        appointment = AppointmentFactory(
+            doctor=doctor,
+            patient=patient,
+            slot_time=datetime.datetime(2026, 8, 1, 9, 0, tzinfo=UTC),
+        )
+
+        response = client.patch(
+            f"/api/appointments/{appointment.id}/cancel/",
+            {"reason": "Doctor unavailable"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["status"] == Appointment.Status.CANCELLED
+
+    def test_doctor_cannot_cancel_another_doctors_appointment(self, doctor, patient):
+        other_doctor = DoctorFactory()
+        client = APIClient()
+        client.force_authenticate(user=doctor.user)
+        appointment = AppointmentFactory(
+            doctor=other_doctor,
+            patient=patient,
+            slot_time=datetime.datetime(2026, 8, 1, 10, 0, tzinfo=UTC),
+        )
+
+        response = client.patch(
+            f"/api/appointments/{appointment.id}/cancel/",
+            {"reason": "Unauthorized"},
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_admin_can_cancel_any_appointment(self, doctor, patient):
+        admin = AdminUserFactory()
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        appointment = AppointmentFactory(
+            doctor=doctor,
+            patient=patient,
+            slot_time=datetime.datetime(2026, 8, 1, 11, 0, tzinfo=UTC),
+        )
+
+        response = client.patch(
+            f"/api/appointments/{appointment.id}/cancel/",
+            {"reason": "Admin cancellation"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["status"] == Appointment.Status.CANCELLED
+
+    def test_canceling_another_patients_appointment_returns_404(self, doctor, db):
         patient1 = UserFactory()
         patient2 = UserFactory()
         appointment = AppointmentFactory(
@@ -138,8 +190,8 @@ class TestCancelAppointment:
         client.force_authenticate(user=patient2)
 
         response = client.patch(
-            f"/api/appointments/{appointment.id}/reschedule/",
-            {"slot_time": make_slot(10)},
+            f"/api/appointments/{appointment.id}/cancel/",
+            {"reason": "Unauthorized"},
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -188,7 +240,7 @@ class TestRescheduleAppointment:
         assert response.status_code == status.HTTP_200_OK
         assert "10:00" in response.data["slot_time"]
 
-    def test_canceling_another_patients_appointment_returns_404(self, doctor, db):
+    def test_rescheduling_another_patients_appointment_returns_404(self, doctor, db):
         patient1 = UserFactory()
         patient2 = UserFactory()
         appointment = AppointmentFactory(
@@ -200,8 +252,8 @@ class TestRescheduleAppointment:
         client.force_authenticate(user=patient2)
 
         response = client.patch(
-            f"/api/appointments/{appointment.id}/cancel/",
-            {"reason": "Unauthorized"},
+            f"/api/appointments/{appointment.id}/reschedule/",
+            {"slot_time": make_slot(10)},
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -220,6 +272,38 @@ class TestRescheduleAppointment:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+class TestAppointmentListing:
+    def test_doctor_can_list_their_own_appointments(self, doctor, patient):
+        client = APIClient()
+        client.force_authenticate(user=doctor.user)
+        AppointmentFactory(
+            doctor=doctor,
+            patient=patient,
+            slot_time=datetime.datetime(2026, 8, 1, 9, 0, tzinfo=UTC),
+        )
+
+        response = client.get("/api/appointments/")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["results"]) == 1
+
+    def test_doctor_cannot_list_another_doctors_appointments(self, doctor, patient):
+        other_doctor = DoctorFactory()
+        client = APIClient()
+        client.force_authenticate(user=doctor.user)
+        AppointmentFactory(
+            doctor=other_doctor,
+            patient=patient,
+            slot_time=datetime.datetime(2026, 8, 1, 10, 0, tzinfo=UTC),
+        )
+
+        response = client.get("/api/appointments/")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"] == []
 
 
 @pytest.mark.django_db
