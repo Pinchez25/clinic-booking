@@ -57,7 +57,7 @@ class AppointmentViewSet(
             return queryset
 
         if user.has_role(User.Role.DOCTOR):
-            return queryset.filter(doctor=user.doctor_profile)
+            return queryset.filter(doctor__user=user)
 
         return queryset.filter(patient=user)
 
