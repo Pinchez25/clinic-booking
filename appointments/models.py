@@ -41,11 +41,3 @@ class Appointment(models.Model):
 
     def __str__(self):
         return f"{self.patient} with {self.doctor} on {self.slot_time}"
-
-    @property
-    def is_active(self) -> bool:
-        return self.status == self.Status.ACTIVE
-
-    @property
-    def is_cancelled(self) -> bool:
-        return self.status == self.Status.CANCELLED
