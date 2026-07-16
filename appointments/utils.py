@@ -228,13 +228,3 @@ def reschedule_appointment(
     )
 
     return appointment
-
-
-def _can_manage_appointment(user, appointment):
-    if user.has_role(User.Role.ADMIN):
-        return True
-
-    if user.has_role(User.Role.DOCTOR):
-        return appointment.doctor.user_id == user.id
-
-    return appointment.patient_id == user.id
