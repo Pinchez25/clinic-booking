@@ -27,18 +27,13 @@ def generate_slots(doctor: Doctor, target_date: date) -> list[datetime]:
     Handles overnight shifts where work_end <= work_start.
     The target_date is the date the shift STARTS in the clinic's timezone.
     """
-    clinic_tz = _get_clinic_tz()
+    start, end = get_shift_bounds(doctor, target_date)
+
     slots = []
-
-    current = datetime.combine(target_date, doctor.work_start, tzinfo=clinic_tz)
-
-    if doctor.is_overnight:
-        end = datetime.combine(target_date + timedelta(days=1), doctor.work_end, tzinfo=clinic_tz)
-    else:
-        end = datetime.combine(target_date, doctor.work_end, tzinfo=clinic_tz)
+    current = start
 
     while current < end:
-        slots.append(current.astimezone(UTC))
+        slots.append(current)
         current += SLOT_DURATION
 
     return slots
@@ -85,3 +80,35 @@ def is_valid_slot(doctor: Doctor, slot_time: datetime) -> bool:
     if doctor.is_overnight:
         return local_time >= start or local_time < end
     return start <= local_time < end
+
+
+def get_shift_bounds(
+    doctor: Doctor,
+    target_date: date,
+) -> tuple[datetime, datetime]:
+    """
+    Return the UTC start and end datetimes for the doctor's shift that starts
+    on target_date in the clinic's local timezone.
+    """
+    clinic_tz = _get_clinic_tz()
+
+    start = datetime.combine(
+        target_date,
+        doctor.work_start,
+        tzinfo=clinic_tz,
+    )
+
+    if doctor.is_overnight:
+        end = datetime.combine(
+            target_date + timedelta(days=1),
+            doctor.work_end,
+            tzinfo=clinic_tz,
+        )
+    else:
+        end = datetime.combine(
+            target_date,
+            doctor.work_end,
+            tzinfo=clinic_tz,
+        )
+
+    return start.astimezone(UTC), end.astimezone(UTC)
