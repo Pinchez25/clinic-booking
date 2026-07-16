@@ -16,7 +16,6 @@ from accounts.serializers import UserSerializer
 from doctors.models import Doctor
 
 from .models import Appointment
-from .permissions import IsAppointmentOwner
 from .serializers import (
     AppointmentSerializer,
     BookAppointmentSerializer,
@@ -35,23 +34,18 @@ logger = logging.getLogger("appointments")
 
 @extend_schema(tags=["Appointments"])
 class AppointmentViewSet(CreateModelMixin, RetrieveModelMixin, GenericViewSet):
+    queryset = Appointment.objects.all()
     serializer_class = AppointmentSerializer
     permission_classes = [IsAuthenticated, IsPatient]
 
     def get_queryset(self):
-        qs = Appointment.objects.select_related("doctor__user", "patient").order_by("slot_time")
-        if self.action in {"cancel", "reschedule"}:
-            return qs
-        return qs.filter(patient=self.request.user)
-
-    def get_permissions(self):
-        if self.action in {"cancel", "reschedule"}:
-            return [
-                IsAuthenticated(),
-                IsPatient(),
-                IsAppointmentOwner(),
-            ]
-        return super().get_permissions()
+        return (
+            super()
+            .get_queryset()
+            .select_related("doctor__user", "patient")
+            .filter(patient=self.request.user)
+            .order_by("slot_time")
+        )
 
     @extend_schema(
         summary="Book an appointment",
