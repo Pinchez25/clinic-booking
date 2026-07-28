@@ -70,9 +70,7 @@ original booking. They never lose a slot.
 - **Working hour changes**: When a doctor's working hours change, any active appointment that no longer falls within the
   updated schedule is cancelled automatically and marked with the update reason. This is currently applied to active
   bookings that still fit the future booking window.
-- **Doctor cancellation scope**: Doctors can cancel their own appointments through the existing appointment cancel
-  endpoint.
-  They cannot cancel another doctor's appointments. Admin users can cancel any appointment.
+
 - **Day-wide cancellation**: The service supports cancelling all active appointments for a given day by doctor/admin
   action,
   but this is still handled through the service layer rather than a dedicated public endpoint.
@@ -81,6 +79,9 @@ original booking. They never lose a slot.
   13 availability returns slots from `2026-07-13 22:00Z` to `2026-07-14 05:30Z`.
 - **Creating a new doctor**: While I don't think doctors should be self-registering, we could have an endpoint to create
   them only that it would be a separate admin-only operation.
+- Doctors should have specialisations. You can't just book any doctor e.g. you shouldn't  book a cardiologist if you want an oncologist. They won't help you.
+- We do not account for breaks e.g. lunch break instead we only track work_start, work_end and is_available.
+- Actually known bug: theoretically, a doctor's shift could start at 8:03 and in that case we'd generate slots like 08:03, 08:33, 09:03 ... The booking code would then reject because it's not on :00 or :30. We've simplified the code to assume work starts exactly at the top of the hour or at 30 minues into the hour.
 
 ---
 
@@ -123,9 +124,9 @@ uv run python manage.py runserver
 ```
 
 The API is available at `http://localhost:8000`.
-Interactive API docs at `http://localhost:8000/api/docs/`.
+Interactive API docs at `http://localhost:8000`
 
-### Running Tests
+### Running Test
 
 ```bash
 uv run pytest

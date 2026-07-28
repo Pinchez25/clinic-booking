@@ -154,7 +154,7 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Clinic Booking API",
+    "TITLE": "Clinic Booking API (Updated)",
     "DESCRIPTION": "REST API for booking and managing clinic appointments.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
