@@ -12,7 +12,10 @@ from doctors.tests.factories import DoctorFactory
 
 
 def make_slot(hour, minute=0):
-    return datetime.datetime(2026, 8, 1, hour, minute, tzinfo=UTC).isoformat()
+    future_date = (datetime.datetime.now(UTC) + datetime.timedelta(days=30)).date()
+    return datetime.datetime(
+        future_date.year, future_date.month, future_date.day, hour, minute, tzinfo=UTC
+    ).isoformat()
 
 
 @pytest.fixture
@@ -85,10 +88,18 @@ class TestBookAppointment:
 
     def test_duplicate_slot_returns_400(self, auth_client, doctor, patient):
         client, _ = auth_client
+        future_date = (datetime.datetime.now(UTC) + datetime.timedelta(days=30)).date()
         AppointmentFactory(
             doctor=doctor,
             patient=patient,
-            slot_time=datetime.datetime(2026, 8, 1, 9, 0, tzinfo=UTC),
+            slot_time=datetime.datetime(
+                future_date.year,
+                future_date.month,
+                future_date.day,
+                9,
+                0,
+                tzinfo=UTC,
+            ),
         )
         response = client.post(
             "/api/appointments/",
