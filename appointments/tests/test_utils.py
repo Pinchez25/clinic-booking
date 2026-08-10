@@ -17,11 +17,13 @@ from appointments.utils import (
 )
 from doctors.tests.factories import DoctorFactory
 
-# A future date well past any test run
-FUTURE_DATE = datetime.date(2026, 8, 1)
+# A date far enough in the future to remain valid across test runs.
+FUTURE_DATE = (timezone.now() + datetime.timedelta(days=30)).date()
 
 
-def make_slot(hour, minute=0, date=FUTURE_DATE):
+def make_slot(hour, minute=0, date=None):
+    if date is None:
+        date = FUTURE_DATE
     return datetime.datetime.combine(date, datetime.time(hour, minute), tzinfo=UTC)
 
 
