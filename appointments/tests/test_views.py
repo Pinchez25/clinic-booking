@@ -88,22 +88,15 @@ class TestBookAppointment:
 
     def test_duplicate_slot_returns_400(self, auth_client, doctor, patient):
         client, _ = auth_client
-        future_date = (datetime.datetime.now(UTC) + datetime.timedelta(days=30)).date()
+        slot_value = make_slot(9)
         AppointmentFactory(
             doctor=doctor,
             patient=patient,
-            slot_time=datetime.datetime(
-                future_date.year,
-                future_date.month,
-                future_date.day,
-                9,
-                0,
-                tzinfo=UTC,
-            ),
+            slot_time=datetime.datetime.fromisoformat(slot_value),
         )
         response = client.post(
             "/api/appointments/",
-            {"doctor_id": str(doctor.id), "slot_time": make_slot(9)},
+            {"doctor_id": str(doctor.id), "slot_time": slot_value},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
