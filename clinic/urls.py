@@ -20,7 +20,12 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from rest_framework.permissions import AllowAny
 
+from clinic.health import health_check, liveness_check, readiness_check
+
 urlpatterns = [
+    path("health/", health_check, name="health"),
+    path("health/live/", liveness_check, name="health-live"),
+    path("health/ready/", readiness_check, name="health-ready"),
     path("admin/", admin.site.urls),
     path("api/schema/", SpectacularAPIView.as_view(permission_classes=[AllowAny]), name="schema"),
     path(
