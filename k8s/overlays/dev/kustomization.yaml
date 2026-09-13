@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: clinic-booking
+
+resources:
+  - ../../base
+  - ingress.yaml
+
+patches:
+  - path: patch-app.yaml
+    target:
+      kind: Deployment
+      name: app
+
+configMapGenerator:
+  - name: app-config
+    literals:
+      - ALLOWED_HOSTS=127.0.0.1,localhost,clinic-booking.local
+      - DJANGO_SETTINGS_MODULE=clinic.settings.development
+      - DEBUG=true
+  - name: db-config
+    literals:
+      - POSTGRES_DB=clinic
+      - POSTGRES_USER=clinic
+
+# These are dev-only credentials for a throwaway local Postgres instance —
+# fine to keep in plain literals here since nothing behind them matters.
+# Never do this for overlays/prod; see the note there.
+secretGenerator:
+  - name: app-secret
+    literals:
+      - SECRET_KEY='v&@q1yg+u-$bzh$*2s9=c&-u=jty@7z2e+5vz)lqr&qexx+csq'
+      - DATABASE_URL=postgres://clinic:postgres@db.clinic-booking.svc.cluster.local:5432/clinic
+  - name: db-secret
+    literals:
+      - POSTGRES_PASSWORD=postgres
