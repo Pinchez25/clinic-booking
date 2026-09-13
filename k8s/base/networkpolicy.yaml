@@ -1,0 +1,48 @@
+# NOTE: NetworkPolicy is only enforced if the cluster's CNI plugin supports
+# it. minikube's default network plugin does NOT enforce these out of the
+# box — start minikube with `--cni=calico` (or enable an equivalent addon)
+# to actually see this take effect locally. On a real cluster, most CNIs
+# used in production (Calico, Cilium, etc.) enforce this by default.
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-allow-app-only
+  namespace: clinic-booking
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: db
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: app
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: app-allow-ingress-only
+  namespace: clinic-booking
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: app
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: 8000
