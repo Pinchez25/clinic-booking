@@ -1,0 +1,60 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: clinic-booking
+
+resources:
+  - ../../base
+  - ingress.yaml
+  - clusterissuer.yaml
+  - hpa.yaml
+
+images:
+  - name: clinic-booking-app
+    newName: REPLACE_WITH_YOUR_REGISTRY/clinic-booking-app
+    newTag: REPLACE_WITH_YOUR_TAG
+
+patches:
+  - path: patch-app.yaml
+    target:
+      kind: Deployment
+      name: app
+  # StatefulSet volumeClaimTemplates aren't reliably strategic-merge-able
+  # across k8s versions, so this uses an explicit JSON6902 patch instead.
+  - target:
+      kind: StatefulSet
+      name: db
+    patch: |-
+      - op: add
+        path: /spec/volumeClaimTemplates/0/spec/storageClassName
+        value: REPLACE_WITH_YOUR_CLOUD_STORAGE_CLASS
+      - op: replace
+        path: /spec/volumeClaimTemplates/0/spec/resources/requests/storage
+        value: 10Gi
+
+configMapGenerator:
+  - name: app-config
+    literals:
+      - ALLOWED_HOSTS=REPLACE_WITH_YOUR_DOMAIN
+      - DJANGO_SETTINGS_MODULE=clinic.settings.production
+      - DEBUG=false
+  - name: db-config
+    literals:
+      - POSTGRES_DB=clinic
+      - POSTGRES_USER=clinic
+
+# IMPORTANT: these are placeholders, not real secrets. Don't commit actual
+# production credentials as plain literals in a file that goes into git.
+# Generate them at deploy time instead — e.g. `kubectl create secret
+# generic app-secret --from-literal=SECRET_KEY=... --from-literal=DATABASE_URL=...
+# -n clinic-booking`, or better, manage them with something like External
+# Secrets Operator or Sealed Secrets pulling from your cloud's secret store.
+# Left here as literals only so the shape (which keys exist) is documented.
+secretGenerator:
+  - name: app-secret
+    literals:
+      - SECRET_KEY=REPLACE_WITH_A_FRESH_GENERATED_KEY
+      - DATABASE_URL=postgres://clinic:REPLACE_WITH_REAL_PASSWORD@db.clinic-booking.svc.cluster.local:5432/clinic
+  - name: db-secret
+    literals:
+      - POSTGRES_PASSWORD=REPLACE_WITH_REAL_PASSWORD
