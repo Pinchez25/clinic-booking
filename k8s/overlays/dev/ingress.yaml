@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app
+  namespace: clinic-booking
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: clinic-booking.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app
+                port:
+                  number: 8000
+  # No tls: block needed — Traefik serves HTTPS on its websecure entrypoint
+  # using its own built-in self-signed certificate for any host by default,
+  # so https://clinic-booking.local already works once /etc/hosts is set up
+  # (see README). Browsers will show a "not trusted" warning, which is
+  # expected for a self-signed cert.
+  #
+  # For a fully browser-trusted local cert instead, follow minikube's mkcert
+  # guide (https://minikube.sigs.k8s.io/docs/handbook/addons/traefik/),
+  # create the resulting TLS secret in this namespace, then add:
+  #   tls:
+  #     - hosts: ["clinic-booking.local"]
+  #       secretName: <the secret mkcert produced>
